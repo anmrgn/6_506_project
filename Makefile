@@ -5,7 +5,7 @@ BIN_DIR = bin
 
 all: $(BIN_DIR)/.dirstamp $(BIN_DIR)/main
 
-$(BIN_DIR)/main: $(SRC_DIR)/distribution.hpp $(SRC_DIR)/serial_lloyd.hpp $(SRC_DIR)/main.cpp
+$(BIN_DIR)/main: $(SRC_DIR)/distribution.hpp $(SRC_DIR)/lloyd.hpp $(SRC_DIR)/main.cpp
 	$(CXX) $(CPPFLAGS) $(SRC_DIR)/main.cpp -o $@
 
 .PHONY: clean

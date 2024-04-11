@@ -1,5 +1,5 @@
 #include "distribution.hpp"
-#include "serial_lloyd.hpp"
+#include "lloyd.hpp"
 
 #include <memory>
 #include <algorithm>
