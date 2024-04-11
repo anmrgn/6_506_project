@@ -1,9 +1,11 @@
 #pragma once
 
 #include <limits>
+#include <vector>
 #include <algorithm>
 #include <stdexcept>
 #include <cmath>
+#include <memory>
 
 /**
  * @brief Describes the necessary distribution-specific queries for the Lloyd algorithm
@@ -11,6 +13,11 @@
 class Distribution
 {
 public:
+
+    virtual ~Distribution()
+    {
+        
+    }
 
     /**
      * @brief Computes the conditional mean in the interval [a, b]
@@ -78,6 +85,12 @@ public:
 
     virtual double conditional_mean(double a, double b) const override
     {
+        if ((a >= m_upper_endpoint) || (b <= m_lower_endpoint))
+        {
+            // undefined, but let's just return (a + b) / 2
+            return 0.0;
+        }
+
         a = std::max(a, m_lower_endpoint);
         b = std::min(b, m_upper_endpoint);
 
@@ -86,6 +99,11 @@ public:
 
     virtual double probability_integral(double a, double b) const override
     {
+        if ((a >= m_upper_endpoint) || (b <= m_lower_endpoint))
+        {
+            return 0.0;
+        }
+
         a = std::max(a, m_lower_endpoint);
         b = std::min(b, m_upper_endpoint);
 
@@ -94,6 +112,11 @@ public:
 
     virtual double mean_integral(double a, double b) const override
     {
+        if ((a >= m_upper_endpoint) || (b <= m_lower_endpoint))
+        {
+            return 0.0;
+        }
+
         a = std::max(a, m_lower_endpoint);
         b = std::min(b, m_upper_endpoint);
 
@@ -149,9 +172,72 @@ public:
 
     inline double std_cdf(double a) const
     {
-        return (1.0 + std::erf(a / M_SQRT2)) / 2.0;
+        return (1.0 + std::erf(a * M_SQRT1_2)) / 2.0;
     }
 
     const double m_mean;
     const double m_std;
+};
+
+
+class MixtureDistribution : public Distribution
+{
+public:
+
+    MixtureDistribution(const std::vector<std::shared_ptr<const Distribution>> &distributions, const std::vector<double> &weights)
+        : m_distributions(distributions)
+        , m_weights(weights)
+    {
+        if (m_distributions.size() != m_weights.size())
+        {
+            throw std::invalid_argument("Number of distributions must match the number of weights");
+        }
+
+        double weight_sum = 0;
+        for (size_t idx = 0; idx < m_weights.size(); ++idx)
+        {
+            if (m_weights[idx] < 0)
+            {
+                throw std::invalid_argument("Weights must be non-negative");
+            }
+            weight_sum += m_weights[idx];
+        }
+
+        if (std::abs(weight_sum - 1.0) > EPSILON)
+        {
+            throw std::invalid_argument("Weights must sum to 1.0");
+        }
+
+        for (size_t idx = 0; idx < m_distributions.size(); ++idx)
+        {
+            if (m_distributions[idx] == nullptr)
+            {
+                throw std::invalid_argument("Null-pointer provided in distribution vector");
+            }
+        }
+    }
+
+    virtual double probability_integral(double a, double b) const override
+    {
+        double total = 0;
+        for (size_t idx = 0; idx < m_weights.size(); ++idx)
+        {
+            total += m_weights[idx] * m_distributions[idx]->probability_integral(a, b);
+        }
+        return total;
+    }
+
+    virtual double mean_integral(double a, double b) const override
+    {
+        double total = 0;
+        for (size_t idx = 0; idx < m_weights.size(); ++idx)
+        {
+            total += m_weights[idx] * m_distributions[idx]->mean_integral(a, b);
+        }
+        return total;
+    }
+
+    static constexpr double EPSILON = 1.0e-9;
+    const std::vector<std::shared_ptr<const Distribution>> m_distributions;
+    const std::vector<double> m_weights;
 };
