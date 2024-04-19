@@ -1,5 +1,5 @@
-CXX = /opt/homebrew/bin/g++-13
-CPPFLAGS = -Wall
+CXX = xcrun /opt/opencilk/bin/clang++
+CPPFLAGS = -Wall -std=c++17 -fopencilk -O3
 SRC_DIR = src
 BIN_DIR = bin
 
