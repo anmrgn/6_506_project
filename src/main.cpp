@@ -56,12 +56,12 @@ int main(int argc, char **argv)
 
     // 8 representation points means 3 bits per sample
     // std::vector<double> input_representation_points = {-1.1, -0.9, -0.7, -0.5, 0.5, 0.7, 0.9, 1.1};
-    size_t number_bits = 12;
+    size_t number_bits = 10;
     size_t number_representation_points = (1 << number_bits);
     std::vector<double> input_representation_points = linspace(-5, 5, number_representation_points);
     // print_representation_points(input_representation_points);
 
-    size_t number_iterations = 50000;
+    size_t number_iterations = 3000;
 
     const std::chrono::steady_clock::time_point serial_start = std::chrono::steady_clock::now();
     std::vector<double> serial_result = serial_lloyd(input_representation_points, mixed_normal, number_iterations);
