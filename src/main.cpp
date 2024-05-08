@@ -39,14 +39,25 @@ std::vector<double> linspace(double start, double end, size_t num)
     return result;
 }
 
-int main(int argc, char **argv)
+bool all_exactly_equal(const std::vector<double> &array_1, const std::vector<double> &array_2)
 {
-    if (!std::numeric_limits<double>::has_infinity)
+    if (array_1.size() != array_2.size())
     {
-        std::cerr << "Require infinity as possible input for the distribution class to work." << std::endl;
-        return -1;
+        return false;
     }
+    
+    for (size_t idx = 0; idx < array_1.size(); ++idx)
+    {
+        if (array_1[idx] != array_2[idx])
+        {
+            return false;
+        }
+    }
+    return true;
+}
 
+void manual_single_test()
+{
     Uniform std_uniform(0.0, 1.0);
     Normal std_normal(0.0, 1.0);
 
@@ -56,12 +67,12 @@ int main(int argc, char **argv)
 
     // 8 representation points means 3 bits per sample
     // std::vector<double> input_representation_points = {-1.1, -0.9, -0.7, -0.5, 0.5, 0.7, 0.9, 1.1};
-    size_t number_bits = 10;
+    size_t number_bits = 15;
     size_t number_representation_points = (1 << number_bits);
     std::vector<double> input_representation_points = linspace(-5, 5, number_representation_points);
     // print_representation_points(input_representation_points);
 
-    size_t number_iterations = 3000;
+    size_t number_iterations = 1000;
 
     const std::chrono::steady_clock::time_point serial_start = std::chrono::steady_clock::now();
     std::vector<double> serial_result = serial_lloyd(input_representation_points, mixed_normal, number_iterations);
@@ -69,25 +80,48 @@ int main(int argc, char **argv)
     
     const int64_t serial_duration_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(serial_end - serial_start).count();
     
-    const std::chrono::steady_clock::time_point parallel_start = std::chrono::steady_clock::now();
-    std::vector<double> parallel_result = parallel_lloyd(input_representation_points, mixed_normal, number_iterations);
-    const std::chrono::steady_clock::time_point parallel_end = std::chrono::steady_clock::now();
-    
-    const int64_t parallel_duration_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(parallel_end - parallel_start).count();
-
     const std::chrono::steady_clock::time_point serial_cache_oblivious_start = std::chrono::steady_clock::now();
     std::vector<double> serial_cache_oblivious_result = serial_lloyd_cache_oblivious(input_representation_points, mixed_normal, number_iterations);
     const std::chrono::steady_clock::time_point serial_cache_oblivious_end = std::chrono::steady_clock::now();
     
     const int64_t serial_cache_oblivious_duration_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(serial_cache_oblivious_end - serial_cache_oblivious_start).count();
 
+    const std::chrono::steady_clock::time_point parallel_start = std::chrono::steady_clock::now();
+    std::vector<double> parallel_result = parallel_lloyd(input_representation_points, mixed_normal, number_iterations);
+    const std::chrono::steady_clock::time_point parallel_end = std::chrono::steady_clock::now();
+    
+    const int64_t parallel_duration_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(parallel_end - parallel_start).count();
+
+    const std::chrono::steady_clock::time_point parallel_cache_oblivious_start = std::chrono::steady_clock::now();
+    std::vector<double> parallel_cache_oblivious_result = parallel_lloyd_cache_oblivious(input_representation_points, mixed_normal, number_iterations);
+    const std::chrono::steady_clock::time_point parallel_cache_oblivious_end = std::chrono::steady_clock::now();
+    
+    const int64_t parallel_cache_oblivious_duration_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(parallel_cache_oblivious_end - parallel_cache_oblivious_start).count();
+
     // print_representation_points(serial_result);
-    // print_representation_points(parallel_result);
     // print_representation_points(serial_cache_oblivious_result);
+    // print_representation_points(parallel_result);
+    // print_representation_points(parallel_cache_oblivious_result);
 
     std::cout << "Serial time (ms): " << serial_duration_ns / NS_PER_MS << std::endl;
-    std::cout << "Parallel time (ms): " << parallel_duration_ns / NS_PER_MS << std::endl;
     std::cout << "Serial cache oblivious time (ms): " << serial_cache_oblivious_duration_ns / NS_PER_MS << std::endl;
+    std::cout << "Parallel time (ms): " << parallel_duration_ns / NS_PER_MS << std::endl;
+    std::cout << "Parallel cache oblivious time (ms): " << parallel_cache_oblivious_duration_ns / NS_PER_MS << std::endl;
 
+    std::cout << "Serial matches serial cache oblivious: " << all_exactly_equal(serial_result, serial_cache_oblivious_result) << std::endl;
+    std::cout << "Serial matches parallel: " << all_exactly_equal(serial_result, parallel_result) << std::endl;
+    std::cout << "Serial matches parallel cache oblivious: " << all_exactly_equal(serial_result, parallel_cache_oblivious_result) << std::endl;
+}
+
+int main(int argc, char **argv)
+{
+    if (!std::numeric_limits<double>::has_infinity)
+    {
+        std::cerr << "Require infinity as possible input for the distribution class to work." << std::endl;
+        return -1;
+    }
+
+    manual_single_test();
+    
     return 0;
 }

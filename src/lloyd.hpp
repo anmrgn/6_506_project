@@ -109,29 +109,15 @@ std::vector<double> parallel_lloyd(const std::vector<double> &input_representati
     return current_representation_points;
 }
 
-void serial_lloyd_cache_oblivious_kernel
+void lloyd_kernel
 (
     size_t t,
     size_t idx,
-    std::vector<double> *representation_points_even_iterations,
-    std::vector<double> *representation_points_odd_iterations,
+    const std::vector<double> *input_representation_points,
+    std::vector<double> *output_representation_points,
     const Distribution &distribution
 )
 {
-    const std::vector<double> *input_representation_points = nullptr;
-    std::vector<double> *output_representation_points = nullptr;
-
-    if ((t % 2) == 0)
-    {
-        input_representation_points = representation_points_odd_iterations;
-        output_representation_points = representation_points_even_iterations;
-    }
-    else
-    {
-        input_representation_points = representation_points_even_iterations;
-        output_representation_points = representation_points_odd_iterations;
-    }
-
     double previous_representation_point = Distribution::neg_inf;
     double current_representation_point = (*input_representation_points)[idx];
     double next_representation_point = Distribution::pos_inf;
@@ -183,7 +169,21 @@ void serial_lloyd_cache_oblivious_walk
     {
         for (int x = x0; x < x1; ++x)
         {
-            serial_lloyd_cache_oblivious_kernel(t0, x, representation_points_even_iterations, representation_points_odd_iterations, distribution);
+            const std::vector<double> *input_representation_points = nullptr;
+            std::vector<double> *output_representation_points = nullptr;
+
+            if ((t0 % 2) == 0)
+            {
+                input_representation_points = representation_points_odd_iterations;
+                output_representation_points = representation_points_even_iterations;
+            }
+            else
+            {
+                input_representation_points = representation_points_even_iterations;
+                output_representation_points = representation_points_odd_iterations;
+            }
+
+            lloyd_kernel(t0, x, input_representation_points, output_representation_points, distribution);
         }
     }
     else if (dt > 1)
@@ -212,6 +212,139 @@ std::vector<double> serial_lloyd_cache_oblivious(const std::vector<double> &inpu
 
     // time t = 0 represents initial set of points
     serial_lloyd_cache_oblivious_walk(1, number_iterations + 1, 0, 0, number_points, 0, &representation_points_even_iterations, &representation_points_odd_iterations, distribution);
+
+    if ((number_iterations % 2) == 0)
+    {
+        return representation_points_even_iterations;
+    }
+    else
+    {
+        return representation_points_odd_iterations;
+    }
+}
+
+/**
+ * @brief Implements walk1 algorithm from Frigo and Strumpen's parallel algorithm (2006)
+ * 
+ * @param t0 
+ * @param t1 
+ * @param x0 
+ * @param dx0_dt 
+ * @param x1 
+ * @param dx1_dt 
+ * @param representation_points_even_iterations 
+ * @param representation_points_odd_iterations 
+ * @param distribution
+ * @param r
+ */
+void parallel_lloyd_cache_oblivious_walk
+(
+    int t0,
+    int t1,
+    int x0,
+    int dx0_dt,
+    int x1,
+    int dx1_dt,
+    std::vector<double> *representation_points_even_iterations,
+    std::vector<double> *representation_points_odd_iterations,
+    const Distribution &distribution,
+    int r
+)
+{
+    int h = t1 - t0;
+    int dx = x1 - x0;
+    int i;
+
+    if ((h >= 1) && (dx >= 2 * h * r))
+    {
+        int l = dx / r;
+        for (i = 0; i < r - 1; ++i)
+        {
+            cilk_spawn parallel_lloyd_cache_oblivious_walk(
+                t0, t1, x0 + i * l, 1, x0 + (i + 1) * l, -1, 
+                representation_points_even_iterations, 
+                representation_points_odd_iterations, 
+                distribution, r
+            );
+        }
+        cilk_spawn parallel_lloyd_cache_oblivious_walk(
+            t0, t1, x0 + i * l, 1, x1, -1, 
+            representation_points_even_iterations, 
+            representation_points_odd_iterations, 
+            distribution, r
+        );
+
+        cilk_sync;
+
+        cilk_spawn parallel_lloyd_cache_oblivious_walk(
+            t0, t1, x0, dx0_dt, x0, 1, 
+            representation_points_even_iterations, 
+            representation_points_odd_iterations, 
+            distribution, r
+        );
+        for (i = 1; i < r; ++i)
+        {
+            cilk_spawn parallel_lloyd_cache_oblivious_walk(
+                t0, t1, x0 + i * l, -1, x0 + i * l, 1, 
+                representation_points_even_iterations, 
+                representation_points_odd_iterations, 
+                distribution, r
+            );
+        }
+        cilk_spawn parallel_lloyd_cache_oblivious_walk(
+            t0, t1, x1, -1, x1, dx1_dt, 
+            representation_points_even_iterations, 
+            representation_points_odd_iterations, 
+            distribution, r
+        );
+    }
+    else if (h > 1)
+    {
+        int s = h / 2;
+        parallel_lloyd_cache_oblivious_walk(
+            t0, t0 + s, x0, dx0_dt, x1, dx1_dt, 
+            representation_points_even_iterations, 
+            representation_points_odd_iterations, 
+            distribution, r
+        );
+        parallel_lloyd_cache_oblivious_walk(
+            t0 + s, t1, x0 + dx0_dt * s, dx0_dt, x1 + dx1_dt * s, dx1_dt, 
+            representation_points_even_iterations, 
+            representation_points_odd_iterations, 
+            distribution, r
+        );
+    }
+    else if (h == 1)
+    {
+        cilk_for (int x = x0; x < x1; ++x)
+        {
+            const std::vector<double> *input_representation_points = nullptr;
+            std::vector<double> *output_representation_points = nullptr;
+
+            if ((t0 % 2) == 0)
+            {
+                input_representation_points = representation_points_odd_iterations;
+                output_representation_points = representation_points_even_iterations;
+            }
+            else
+            {
+                input_representation_points = representation_points_even_iterations;
+                output_representation_points = representation_points_odd_iterations;
+            }
+
+            lloyd_kernel(t0, x, input_representation_points, output_representation_points, distribution);
+        }
+    }
+}
+
+std::vector<double> parallel_lloyd_cache_oblivious(const std::vector<double> &input_representation_points, const Distribution &distribution, size_t number_iterations, int r = 2)
+{
+    const size_t &number_points = input_representation_points.size();
+    std::vector<double> representation_points_even_iterations(input_representation_points);
+    std::vector<double> representation_points_odd_iterations(number_points);
+
+    // time t = 0 represents initial set of points
+    parallel_lloyd_cache_oblivious_walk(1, number_iterations + 1, 0, 0, number_points, 0, &representation_points_even_iterations, &representation_points_odd_iterations, distribution, r);
 
     if ((number_iterations % 2) == 0)
     {
