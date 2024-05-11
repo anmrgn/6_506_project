@@ -14,10 +14,7 @@ class Distribution
 {
 public:
 
-    virtual ~Distribution()
-    {
-        
-    }
+    virtual ~Distribution() = default;
 
     /**
      * @brief Computes the conditional mean in the interval [a, b]

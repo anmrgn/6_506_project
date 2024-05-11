@@ -355,3 +355,69 @@ std::vector<double> parallel_lloyd_cache_oblivious(const std::vector<double> &in
         return representation_points_odd_iterations;
     }
 }
+
+/**
+ * @brief Allows for pre-configuration of parameters for the algorithm (e.g., setting r in parallel cache oblivious)
+ */
+
+class LloydAlgorithm
+{
+public:
+    virtual ~LloydAlgorithm() = default;
+    virtual std::vector<double> run(const std::vector<double> &input_representation_points, const Distribution &distribution, size_t number_iterations) const = 0;
+};
+
+class SerialLloydAlgorithm : public LloydAlgorithm
+{
+public:
+    SerialLloydAlgorithm() = default;
+
+    virtual std::vector<double> run(const std::vector<double> &input_representation_points, const Distribution &distribution, size_t number_iterations) const override
+    {
+        return serial_lloyd(input_representation_points, distribution, number_iterations);
+    }
+};
+
+class SerialCacheObliviousLloydAlgorithm : public LloydAlgorithm
+{
+public:
+    SerialCacheObliviousLloydAlgorithm() = default;
+    
+    virtual std::vector<double> run(const std::vector<double> &input_representation_points, const Distribution &distribution, size_t number_iterations) const override
+    {
+        return serial_lloyd_cache_oblivious(input_representation_points, distribution, number_iterations);
+    }
+};
+
+class ParallelLloydAlgorithm : public LloydAlgorithm
+{
+public:
+    ParallelLloydAlgorithm() = default;
+
+    virtual std::vector<double> run(const std::vector<double> &input_representation_points, const Distribution &distribution, size_t number_iterations) const override
+    {
+        return parallel_lloyd(input_representation_points, distribution, number_iterations);
+    }
+};
+
+class ParallelCacheObliviousLloydAlgorithm : public LloydAlgorithm
+{
+public:
+    ParallelCacheObliviousLloydAlgorithm(int r = 2)
+        : m_r(r)
+    {
+        if (r < 2)
+        {
+            throw std::invalid_argument("Require r >= 2."); 
+        }
+
+    }
+
+    virtual std::vector<double> run(const std::vector<double> &input_representation_points, const Distribution &distribution, size_t number_iterations) const override
+    {
+        return parallel_lloyd_cache_oblivious(input_representation_points, distribution, number_iterations, m_r);
+    }
+
+private:
+    const int m_r;
+};
