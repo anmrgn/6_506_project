@@ -297,6 +297,8 @@ void parallel_lloyd_cache_oblivious_walk
             representation_points_odd_iterations, 
             distribution, r
         );
+
+        cilk_sync;
     }
     else if (h > 1)
     {
