@@ -27,9 +27,9 @@ def parallel_fixed_distribution_fixed_number_iterations(distribution, number_ite
                 trial(algorithm, distribution, number_bits, number_iterations)
 
 def main():
-    # trial("serial_naive", "mixed_normal", 27, 50)
+    trial("serial_naive", "mixed_normal", 30, 50)
 
-    fixed_distribution_fixed_number_iterations("mixed_normal", 50, 28, 30, 5)
+    # fixed_distribution_fixed_number_iterations("mixed_normal", 50, 30, 31, 1)
 
 if __name__ == "__main__":
     main()

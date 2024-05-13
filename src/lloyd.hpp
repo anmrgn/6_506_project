@@ -297,18 +297,20 @@ void parallel_lloyd_cache_oblivious_walk
             representation_points_odd_iterations, 
             distribution, r
         );
-
-        cilk_sync;
     }
     else if (h > 1)
     {
         int s = h / 2;
+
         parallel_lloyd_cache_oblivious_walk(
             t0, t0 + s, x0, dx0_dt, x1, dx1_dt, 
             representation_points_even_iterations, 
             representation_points_odd_iterations, 
             distribution, r
         );
+
+        cilk_sync;
+
         parallel_lloyd_cache_oblivious_walk(
             t0 + s, t1, x0 + dx0_dt * s, dx0_dt, x1 + dx1_dt * s, dx1_dt, 
             representation_points_even_iterations, 
