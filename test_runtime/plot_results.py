@@ -30,8 +30,8 @@ def load_range_number_bits(algorithm, distribution, number_bits_start, number_bi
 
 def main():
     algorithms = ["serial_naive", "serial_cache_oblivious", "parallel_naive", "parallel_cache_oblivious"]
-    number_bits_start = 20
-    number_bits_end = 30
+    number_bits_start = 1
+    number_bits_end = 28
     number_iterations = 50
     distribution = "mixed_normal"
 
@@ -41,13 +41,13 @@ def main():
     for algorithm in algorithms:
         results.append(load_range_number_bits(algorithm, distribution, number_bits_start, number_bits_end, number_iterations))
 
-    for algorithm, result in zip(algorithms, results):
-        plt.plot(number_bits_array, np.log(result))
+    # for algorithm, result in zip(algorithms, results):
+    #     plt.plot(number_bits_array, np.log(result))
 
-    plt.legend(algorithms)
-    plt.xlabel("Number bits")
-    plt.ylabel("Log runtime")
-    plt.show()
+    # plt.legend(algorithms)
+    # plt.xlabel("Number bits")
+    # plt.ylabel("Log runtime")
+    # plt.show()
 
     serial_naive_result, serial_cache_oblivious_result, parallel_naive_result, parallel_cache_oblivious_result = results
 
