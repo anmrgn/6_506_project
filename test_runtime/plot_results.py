@@ -33,7 +33,9 @@ def main():
     number_bits_start = 1
     number_bits_end = 28
     number_iterations = 50
-    distribution = "mixed_normal"
+    distribution = "uniform"
+    distribution_to_name = {"uniform": "Uniform", "mixed_uniform": "Mixed Uniform", "standard_normal": "Standard Normal", "mixed_normal": "Mixed Normal"}
+    distribution_name = distribution_to_name[distribution]
 
     number_bits_array = np.array(range(number_bits_start, number_bits_end))
 
@@ -54,12 +56,28 @@ def main():
     serial_speedup = serial_naive_result / serial_cache_oblivious_result
     parallel_speedup = parallel_naive_result / parallel_cache_oblivious_result
 
-    plt.plot(number_bits_array, serial_speedup)
-    plt.plot(number_bits_array, parallel_speedup)
-    plt.plot(number_bits_array, np.array([1 for _ in number_bits_array]))
-    plt.legend(["serial speedup", "parallel speedup", "y = 1"])
-    plt.xlabel("Number bits")
-    plt.ylabel("Speedup")
+    plt.figure(figsize=(12, 9))
+    plt.plot(number_bits_array, serial_speedup, linestyle='-', marker='o', markersize=8, color='blue')
+    plt.title(f"Serial Speedup as a Function of Problem Size for {distribution_name} Distribution", fontsize=14, fontweight='bold', color='red', pad=20)
+    plt.xlabel("Number bits (i.e., problem size is n = 2^b)", fontsize=12, fontweight='bold', color='blue', labelpad=10)
+    plt.ylabel("Speedup", fontsize=12, fontweight='bold', color='green', labelpad=10)
+    plt.xticks(fontsize=10, color='black')
+    plt.yticks(fontsize=10, color='black')
+    plt.grid(True, linestyle='--', linewidth=0.5, color='gray', alpha=0.5, axis='both')
+    plt.tight_layout()
+    plt.savefig(f'serial_speedup_{distribution}', dpi=300)
+    plt.show()
+    
+    plt.figure(figsize=(12, 9))
+    plt.plot(number_bits_array, parallel_speedup, linestyle='-', marker='o', markersize=8, color='blue')
+    plt.title(f"Parallel Speedup as a Function of Problem Size for {distribution_name} Distribution", fontsize=14, fontweight='bold', color='red', pad=20)
+    plt.xlabel("Number bits (i.e., problem size is n = 2^b)", fontsize=12, fontweight='bold', color='blue', labelpad=10)
+    plt.ylabel("Speedup", fontsize=12, fontweight='bold', color='green', labelpad=10)
+    plt.xticks(fontsize=10, color='black')
+    plt.yticks(fontsize=10, color='black')
+    plt.grid(True, linestyle='--', linewidth=0.5, color='gray', alpha=0.5, axis='both')
+    plt.tight_layout()
+    plt.savefig(f'parallel_speedup_{distribution}', dpi=300)
     plt.show()
 
 if __name__ == "__main__":

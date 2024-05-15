@@ -3,6 +3,7 @@ bin/
 .vscode/
 
 /test_runtime/results/*
+/test_runtime/valgrind_results/*
 
 # Prerequisites
 *.d

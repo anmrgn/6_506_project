@@ -18,9 +18,7 @@ def fixed_distribution_fixed_number_iterations(distribution, number_iterations, 
 
 
 def main():
-    # trial("parallel_naive", "mixed_normal", 24, 50)
-
-    fixed_distribution_fixed_number_iterations("mixed_normal", 50, 23, 28, 5, ["serial_cache_oblivious"])
+    fixed_distribution_fixed_number_iterations("mixed_normal", 50, 1, 27, 5)
 
 if __name__ == "__main__":
     main()
